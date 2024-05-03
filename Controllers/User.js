@@ -1,5 +1,10 @@
 const userModal = require("../Models/User");
 const bcrypt = require("bcrypt");
+const jwt = require('jsonwebtoken');
+
+function generatingToken(id){
+  return jwt.sign({userId : id} , '564894165489465asdfsa48949848564sa98df985sa456498asdf')
+}
 
 exports.Signup = async (req, res, next) => {
   try {
@@ -9,7 +14,7 @@ exports.Signup = async (req, res, next) => {
     const pwd = req.body.password;
 
     // Check if email already exists
-    const existingUser = await userModal.findOne({ where : {email : email} });
+    const existingUser = await userModal.findOne({ where: { email: email } });
     if (existingUser) {
       console.log(
         "this email from fronmtend ====>>>>>>",
@@ -38,5 +43,26 @@ exports.Signup = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     res.status(400).json(err);
+  }
+};
+
+exports.Login = async (req, res, next) => {
+  try {
+    const email = req.body.email;
+    const pwd = req.body.password;
+
+    const user = await userModal.findOne({ where: { email: email } });
+
+    if (user) {
+      bcrypt.compare(pwd, user.password, (error, result) => {
+        if (!error) {
+          res.status(200).json({message : "success" , Token:generatingToken(user.id)});
+        } else {
+          throw new Error({ error: "email user was not found" });
+        }
+      });
+    }
+  } catch (err) {
+    res.status(401).json({ error: err });
   }
 };
