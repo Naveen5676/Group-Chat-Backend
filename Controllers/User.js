@@ -9,8 +9,14 @@ exports.Signup = async (req, res, next) => {
     const pwd = req.body.password;
 
     // Check if email already exists
-    const existingUser = await userModal.findOne({ email: email });
+    const existingUser = await userModal.findOne({ where : {email : email} });
     if (existingUser) {
+      console.log(
+        "this email from fronmtend ====>>>>>>",
+        email,
+        "existin email =========>",
+        existingUser.dataValues
+      );
       return res.status(400).json({ error: "Email already exists" });
     }
 
@@ -27,10 +33,10 @@ exports.Signup = async (req, res, next) => {
         phoneno: phoneno,
         password: hashpwd,
       });
-      res.status(200).json(user)
+      res.status(200).json(user);
     });
   } catch (err) {
     console.log(err);
-    res.status(500).json(err);
+    res.status(400).json(err);
   }
 };
