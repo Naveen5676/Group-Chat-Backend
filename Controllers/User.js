@@ -55,12 +55,15 @@ exports.Login = async (req, res, next) => {
 
     if (user) {
       bcrypt.compare(pwd, user.password, (error, result) => {
-        if (!error) {
+        console.log(result)
+        if (result) {
           res.status(200).json({message : "success" , Token:generatingToken(user.id)});
         } else {
-          throw new Error({ error: "email user was not found" });
+          res.status(401).json({message:'User not authorized'})
         }
       });
+    }else{
+      res.status(404).json({message:'user not found'})
     }
   } catch (err) {
     res.status(401).json({ error: err });
