@@ -8,6 +8,12 @@ exports.Signup = async (req, res, next) => {
     const phoneno = req.body.phoneno;
     const pwd = req.body.password;
 
+    // Check if email already exists
+    const existingUser = await userModal.findOne({ email: email });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email already exists" });
+    }
+
     let saltRounds = 10;
     bcrypt.hash(pwd, saltRounds, async (err, hashpwd) => {
       if (err) {
@@ -24,7 +30,7 @@ exports.Signup = async (req, res, next) => {
       res.status(200).json(user)
     });
   } catch (err) {
-    console.log(err)
-    res.status(500).json(err)
+    console.log(err);
+    res.status(500).json(err);
   }
 };

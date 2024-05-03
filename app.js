@@ -7,7 +7,10 @@ const userRouter = require('./Routers/User')
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin : 'http://localhost:5173',
+    methods : ["GET", "POST"]
+}));
 app.use(bodyParser.json({extended : false}))
 app.use(userRouter)
 
