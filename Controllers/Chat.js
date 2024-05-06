@@ -14,3 +14,14 @@ exports.AddData = async (req,res,next)=>{
     })
     
 }
+
+exports.sendChatData = async(req,res,next)=>{
+try{    const messageData =await  chatModal.findAll()
+    //console.log('message data ============>>>>>>>>>>',messageData)
+    if(messageData){
+        res.status(200).json(messageData)
+    }}
+    catch(error){
+
+    }
+}
