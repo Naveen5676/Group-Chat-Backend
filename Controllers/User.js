@@ -13,6 +13,8 @@ exports.Signup = async (req, res, next) => {
     const phoneno = req.body.phoneno;
     const pwd = req.body.password;
 
+    console.log(phoneno)
+
     // Check if email already exists
     const existingUser = await userModal.findOne({ where: { email: email } });
     if (existingUser) {
