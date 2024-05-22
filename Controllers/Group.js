@@ -1,6 +1,8 @@
 const groupModal = require("../Models/Group");
 const userGroupModal = require('../Models/userGroup');
-const userModal = require('../Models/User');
+const User = require('../Models/User');
+const { all } = require("../Routers/Group");
+const userModal = require("../Models/User");
 
 exports.createGroup = async (req, res, next) => {
   try {
@@ -69,13 +71,14 @@ exports.userPresentInGroup=async(req,res,next)=>{
   try {
     const { groupid } = req.body;
     const userid = req.user.id
+    const userinfo = req.user
     const group = await userGroupModal.findOne({where : {userAuthDatumId: userid , groupDatumGroupid:groupid}});
-    console.log('group ==>>', group)
+    //console.log('group ==>>', group)
     const totalgroupmembers = await userGroupModal.findAll({where : {groupDatumGroupid:groupid}})
     console.log('total count' , totalgroupmembers.length)
     const resolvedpromise = await Promise.all([group, totalgroupmembers])
     if(resolvedpromise && group){
-      res.status(200).json({inGroup: true , totalgroupmembers:totalgroupmembers.length})
+      res.status(200).json({inGroup: true , totalgroupmembers:totalgroupmembers.length , userinfo:userinfo })
     }else{
       res.status(200).json({inGroup:false})
     }
@@ -85,19 +88,84 @@ exports.userPresentInGroup=async(req,res,next)=>{
   }
 }
 
-// exports.joinGroup = async(req,res,next)=>{
-//   try{
-//     const { groupid } = req.body;
-//     const userid = req.user.id
-//     const joingroup = await userGroupModal.create({
-//       userAuthDatumId:userid,
-//       groupDatumGroupid:groupid
-//     })
-//     if(joingroup){
-//       res.status(200).json({message:"Successfully joined group" })
-//     }
-//   }catch(error){
-//     console.log(error)
-//     res.status(201).json(error)
+// exports.getAllUsersOfGroup = async (req, res) => {
+//   try {
+//       const { groupid } = req.body;
+
+//       // Find the group by ID
+//       const group = await groupModal.findByPk(groupid);
+      
+//       console.log('group ===>>',group)
+//       if (!group) {
+//           return res.status(200).json({ message: 'Group not found' });
+//       }
+      
+//       const allUsers = await group.getUsers();
+
+//       if (!allUsers || allUsers.length === 0) {
+//           return res.status(200).json({ message: 'No users in this group' });
+//       }
+
+//       return res.json({ allUsers });
+//   } catch (error) {
+//       console.log(error);
+//       res.status(500).json({ message: 'Failed to retrieve group members'  });
 //   }
-// }
+// };
+
+exports.getAllUsersOfGroup = async (req, res) => {
+  try {
+    const { groupid } = req.body;
+
+    // Fetch all users belonging to the group using Sequelize associations
+    const allUsers = await userModal.findAll({
+      attributes: ['id', 'name'],  // Specify the attributes you want to retrieve
+      include: {
+        model: groupModal,
+        attributes:[],// Exclude the group attributes
+        where: { groupid: groupid },
+        through: { attributes: [] } // Exclude attributes from the join table
+      }
+    });
+
+    if (!allUsers || allUsers.length === 0) {
+      return res.status(200).json({ message: 'No users in this group' });
+    }
+
+    return res.json({ allUsers });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Failed to retrieve group members' });
+  }
+};
+
+exports.GroupAdminId = async (req,res,next)=>{
+  try{
+    const {groupid} = req.body;
+    const groupAdmin = await groupModal.findByPk(groupid) ;
+    //console.log(groupAdmin.groupid)
+    res.status(200).json(groupAdmin)
+
+  }catch(error){
+    console.log(error)
+    res.status(201).json({error: error})
+  }
+
+}
+
+exports.deleteGroupMember= async(req,res,next)=>{
+  try{
+    const {groupid,userid} = req.body;
+    const deleteresponse = await userGroupModal.findOne({where : {userAuthDatumId : userid , groupDatumGroupid : groupid }}) ;
+    if(deleteresponse){
+      await deleteresponse.destroy()
+      res.status(200).json({message : 'deleted successfully'})
+    } 
+  } catch(error){
+    console.log(error)
+    res.status(201).json({error : error})
+  }
+
+}
+
+

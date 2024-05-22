@@ -8,6 +8,10 @@ router.post('/creatgroup', authorizationMiddleware.authorization , groupControll
 router.get('/getgrouplist', groupController.showallGroup)
 router.post('/checkuserpresentingroup' , authorizationMiddleware.authorization , groupController.userPresentInGroup)
 router.post('/joingroup', authorizationMiddleware.authorization , groupController.joinGroup)
+router.post('/getalluserofgroup', groupController.getAllUsersOfGroup )
+router.post('/groupadminid' , groupController.GroupAdminId)
+
+router.post('/deleteuserfromgroup' , groupController.deleteGroupMember )
 
 module.exports = router
 
