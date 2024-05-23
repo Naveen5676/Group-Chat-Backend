@@ -1,6 +1,35 @@
 const chatModal = require("../Models/Chat");
 const {Op} = require('sequelize')
 
+const io = require("socket.io")(5000, {
+  cors:{
+    origin: "http://localhost:5173",
+    methods:["GET", "POST"],
+    credentials: true,
+    allowedHeaders:["my-custom-header"]
+  }
+})
+
+io.on("connection" , (socket)=>{
+  socket.on("getChats", async(latestmessageId , groupid )=>{
+    try{
+      if(groupid>0){
+        const groupmessagedata = await  chatModal.findAll({where : { id :{[Op.gt]: latestmessageId} , groupDatumGroupid : groupid}})
+        io.emit('groupmessagedata', groupmessagedata)
+     }else{
+      const messageData = await chatModal.findAll({where : { id :{ [Op.gt]: latestmessageId} , groupDatumGroupid: null}});
+      //console.log('message data ============>>>>>>>>>>',messageData)
+      if (messageData) {
+        io.emit('groupmessagedata', messageData)
+      }
+    }
+
+    }catch(error){
+      console.log(error)
+    }
+  })
+})
+
 exports.AddData = async (req, res, next) => {
   const userid = req.user.id;
   const messagebody = req.body.message;
@@ -43,5 +72,7 @@ exports.sendChatData = async (req, res, next) => {
     // if (messageData) {
     //   res.status(200).json(messageData);
     // }
-  } catch (error) {}
+  } catch (error) {
+    console.log(error)
+  }
 };
