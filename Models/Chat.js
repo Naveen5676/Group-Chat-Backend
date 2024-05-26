@@ -11,6 +11,15 @@ const chatModal =  sequelize.define('chatData',{
     message:{
         type:Sequelize.STRING,
         allowNull:false
+    },
+    fileurl:{
+        type:Sequelize.STRING,
+        allowNull:true
+
+    },
+    filename:{
+        type:Sequelize.STRING,
+        allowNull:true
     }
 });
 
