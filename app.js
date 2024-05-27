@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const sequelize = require("./Util/database");
 const bodyParser = require("body-parser");
+const {Cronjob} = require('./jobs/cron')
 
 const userRouter = require('./Routers/User');
 const chatRouter = require('./Routers/Chat');
@@ -33,6 +34,8 @@ app.use(bodyParser.json({ extended: false }));
 app.use(userRouter);
 app.use(chatRouter);
 app.use(groupRouter);
+
+Cronjob.start();
 
 sequelize
   .sync({ force: false })
