@@ -1,7 +1,7 @@
-const sequelize = require('../Util/database');
+const sequelize = require('../Util/Database');
 const Sequelize = require('sequelize');
 
-const archeivedchatModal =  sequelize.define('chatData',{
+const archeivedchatModal =  sequelize.define('archeivedchatData',{
     id:{
         type:Sequelize.INTEGER,
         primaryKey : true,
@@ -12,12 +12,12 @@ const archeivedchatModal =  sequelize.define('chatData',{
         type:Sequelize.STRING,
         allowNull:false
     },
-    fileurl:{
+    fileUrl:{
         type:Sequelize.STRING,
         allowNull:true
 
     },
-    filename:{
+    fileName:{
         type:Sequelize.STRING,
         allowNull:true
     },

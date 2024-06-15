@@ -1,6 +1,7 @@
-const sequelize = require('../Util/database');
+const sequelize = require('../Util/Database');
 const Sequelize = require('sequelize');
 
+//should have named messageModel
 const chatModal =  sequelize.define('chatData',{
     id:{
         type:Sequelize.INTEGER,
@@ -12,12 +13,12 @@ const chatModal =  sequelize.define('chatData',{
         type:Sequelize.STRING,
         allowNull:false
     },
-    fileurl:{
+    fileUrl:{
         type:Sequelize.STRING,
         allowNull:true
 
     },
-    filename:{
+    fileName:{
         type:Sequelize.STRING,
         allowNull:true
     }

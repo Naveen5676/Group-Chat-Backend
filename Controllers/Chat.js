@@ -22,26 +22,26 @@ io.on("connection", (socket) => {
   });
 
   // When a user selects a group, they join that group's room
-  socket.on("joinGroup", (groupid) => {
-    socket.join(`group_${groupid}`);
-    //console.log(`User joined group: ${groupid}`);
+  socket.on("joinGroup", (id) => {
+    socket.join(`group_${id}`);
+    //console.log(`User joined group: ${id}`);
   });
 
   // Listen for getChats event to fetch messages
-  socket.on("getChats", async (latestmessageId, groupid) => {
+  socket.on("getChats", async (latestmessageId, id) => {
     try {
       let chatData = [];
-      if (groupid > 0) {
+      if (id > 0) {
         // Group-specific chat
         chatData = await chatModal.findAll({
-          where: { id: { [Op.gt]: latestmessageId }, groupDatumGroupid: groupid }
+          where: { id: { [Op.gt]: latestmessageId }, groupDatumId: id }
         });
         //console.log('group message chat', chatData);
         socket.emit('groupmessagedata', chatData); // Emit only to the specific group
       } else {
         // Public chat
         chatData = await chatModal.findAll({
-          where: { id: { [Op.gt]: latestmessageId }, groupDatumGroupid: null }
+          where: { id: { [Op.gt]: latestmessageId }, groupDatumId: null }
         });
         //console.log('public message chat', chatData);
         socket.emit('publicmessagedata', chatData); // Emit only to the public chat
@@ -60,9 +60,10 @@ exports.AddData = async (req, res, next) => {
     if (err) {
       return res.status(400).json({ message: "Error parsing the files", error: err });
     }
+    console.log("Files:", files);
 
     const messagebody = fields.message;
-    const groupid = fields.groupid ? Number(fields.groupid) : null;
+    const id = fields.groupid ? Number(fields.groupid) : null;
     const userid = req.user.id;
 
     const chatData = {
@@ -70,16 +71,16 @@ exports.AddData = async (req, res, next) => {
       userAuthDatumId: userid
     };
 
-    if (groupid) {
-      chatData.groupDatumGroupid = groupid;
+    if (id) {
+      chatData.groupDatumId = id;
     }
 
     if (files.file) {
       const fileContent = fs.readFileSync(String(files.file[0].filepath));
       const filename = files.file[0].originalFilename;
       const fileURl = await S3services.uploadtoS3(fileContent, filename);
-      chatData.fileurl = fileURl;
-      chatData.filename = filename;
+      chatData.fileUrl = fileURl;
+      chatData.fileName = filename;
     }
 
     try {
@@ -87,14 +88,14 @@ exports.AddData = async (req, res, next) => {
       res.status(200).json({ message: "Message and file uploaded successfully", file: files.file });
 
       // Emit the new message to all clients in the relevant room
-      if (groupid) {
+      if (id) {
         const chatData = await chatModal.findAll({
-          where: { groupDatumGroupid: groupid }
+          where: { groupDatumId: id }
         });
-        io.to(`group_${groupid}`).emit('groupmessagedata', chatData);
+        io.to(`group_${id}`).emit('groupmessagedata', chatData);
       } else {
         const chatData = await chatModal.findAll({
-          where: { groupDatumGroupid: null }
+          where: { groupDatumId: null }
         });
         io.to("public").emit('publicmessagedata', chatData);
       }
@@ -108,15 +109,15 @@ exports.AddData = async (req, res, next) => {
 exports.sendChatData = async (req, res, next) => {
   try {
     const latestmessageId = req.query.latestmessageId;
-    const groupid = req.query.groupid;
-    if (groupid > 0) {
+    const id = req.query.id;
+    if (id > 0) {
       const groupmessagedata = await chatModal.findAll({
-        where: { id: { [Op.gt]: latestmessageId }, groupDatumGroupid: groupid }
+        where: { id: { [Op.gt]: latestmessageId }, groupDatumId: id }
       });
       res.status(200).json(groupmessagedata);
     } else {
       const messageData = await chatModal.findAll({
-        where: { id: { [Op.gt]: latestmessageId }, groupDatumGroupid: null }
+        where: { id: { [Op.gt]: latestmessageId }, groupDatumId: null }
       });
       if (messageData) {
         res.status(200).json(messageData);

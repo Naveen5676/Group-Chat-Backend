@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const sequelize = require('../Util/database') 
+const sequelize = require('../Util/Database') 
 
 const userModal = sequelize.define("userAuthData" , {
     id:{
@@ -17,7 +17,7 @@ const userModal = sequelize.define("userAuthData" , {
         unique:true,
         allowNull:false
     },
-    phoneno:{
+    phoneNo:{
         type:Sequelize.BIGINT,
         allowNull:false
     },

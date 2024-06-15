@@ -37,7 +37,7 @@ exports.Signup = async (req, res, next) => {
       let user = await userModal.create({
         name: name,
         email: email,
-        phoneno: phoneno,
+        phoneNo: phoneno,
         password: hashpwd,
       });
       res.status(200).json(user);

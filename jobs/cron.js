@@ -1,6 +1,6 @@
 const CronJob = require("cron").CronJob;
 const chatModal = require("../Models/Chat");
-const archivedChatModal = require("../Models/archeivedChat");
+const archivedChatModal = require("../Models/ArcheivedChat");
 const { Op } = require("sequelize");
 
 exports.Cronjob = new CronJob("0 0 * * * ", async function () {

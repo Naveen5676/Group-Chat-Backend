@@ -3,32 +3,70 @@ const userGroupModal = require('../Models/userGroup');
 const User = require('../Models/User');
 const { all } = require("../Routers/Group");
 const userModal = require("../Models/User");
+const S3services = require('../services/S3services');
+const formidable = require('formidable');
+const fs = require('fs');
 
 exports.createGroup = async (req, res, next) => {
-  try {
-    const { groupname } = req.body;
-    const userid = req.user.id;
+  const form = new formidable.IncomingForm();
+  //console.log('Incommign form data ==>',form)
 
-    const group = await groupModal.create({
-      name: groupname,
-      AdminId: userid,
-    });
-
-    console.log('group ===>>',group.dataValues)
-    const userGroup = userGroupModal.create({
-      userAuthDatumId:userid,
-      groupDatumGroupid:group.dataValues.groupid
-    })
-    const createdgroupsuccessfully= await Promise.all([group , userGroup])
-    if (createdgroupsuccessfully) {
-      res.status(201).json({ message: "Successfully added group" });
-    } else {
-      throw new Error("Something went wrong");
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      return res.status(400).json({ message: "Error parsing the files", error: err });
     }
-  } catch (error) {
-    res.status(400).json(error);
-    console.log(error);
-  }
+
+    const groupname = fields.groupname;
+    const userid = req.user.id;
+    const groupdata = {
+      name: String(groupname),
+      adminId: userid
+    };
+
+    //console.log("Fields:", fields);
+    //console.log("Files:", files);
+
+    if (files.groupimage) {
+      try {
+        const filePath = files.groupimage[0].filepath;
+        const originalFilename = files.groupimage[0].originalFilename;
+
+        //console.log("File Path:", filePath);
+        //console.log("Original Filename:", originalFilename);
+
+        const fileContent = fs.readFileSync(filePath);
+        const fileURL = await S3services.uploadtoS3(fileContent, originalFilename);
+
+        //console.log("File URL============>", fileURL);
+
+        groupdata.imageUrl = fileURL;
+     
+      } catch (fileError) {
+        console.error("File handling error:", fileError);
+        return res.status(500).json({ message: "Error handling file upload", error: fileError });
+      }
+    }
+
+    try {
+      const group = await groupModal.create(groupdata);
+
+      console.log('group ===>>', group.dataValues);
+      const userGroup = await userGroupModal.create({
+        userAuthDatumId: userid,
+        groupDatumId: group.dataValues.id
+      });
+
+      const createdgroupsuccessfully = await Promise.all([group, userGroup]);
+      if (createdgroupsuccessfully) {
+        res.status(201).json({ message: "Successfully added group" });
+      } else {
+        throw new Error("Something went wrong");
+      }
+    } catch (error) {
+      res.status(400).json(error);
+      console.log(error);
+    }
+  });
 };
 
 exports.showallGroup = async (req, res, next) => {
@@ -48,7 +86,7 @@ exports.joinGroup = async (req, res, next) => {
     const { groupid } = req.body;
     const user = req.user;
 
-    console.log('group id ', groupid)
+    //console.log('group id ', groupid)
     const group = await groupModal.findByPk(groupid);
     if (!group) {
       return res.status(404).json({ message: "Group not found" });
@@ -56,7 +94,7 @@ exports.joinGroup = async (req, res, next) => {
 
     await userGroupModal.create({
       userAuthDatumId: user.id,
-      groupDatumGroupid: groupid,
+      groupDatumId: groupid,
     });
 
     res.status(200).json({ message: "Successfully joined group" });
@@ -72,13 +110,15 @@ exports.userPresentInGroup=async(req,res,next)=>{
     const { groupid } = req.body;
     const userid = req.user.id
     const userinfo = req.user
-    const group = await userGroupModal.findOne({where : {userAuthDatumId: userid , groupDatumGroupid:groupid}});
-    //console.log('group ==>>', group)
-    const totalgroupmembers = await userGroupModal.findAll({where : {groupDatumGroupid:groupid}})
+    //console.log('id====>' , groupid)
+    const groupDetails = await groupModal.findOne({where: { id : groupid}})
+    const group = await userGroupModal.findOne({where : {userAuthDatumId: userid , groupDatumId:groupid}});
+    console.log('group ==>>', group)
+    const totalgroupmembers = await userGroupModal.findAll({where : {groupDatumId:groupid}})
     console.log('total count' , totalgroupmembers.length)
-    const resolvedpromise = await Promise.all([group, totalgroupmembers])
+    const resolvedpromise = await Promise.all([group, totalgroupmembers , groupDetails])
     if(resolvedpromise && group){
-      res.status(200).json({inGroup: true , totalgroupmembers:totalgroupmembers.length , userinfo:userinfo })
+      res.status(200).json({inGroup: true , totalgroupmembers:totalgroupmembers.length , userinfo:userinfo , gimage : groupDetails.imageUrl })
     }else{
       res.status(200).json({inGroup:false})
     }
@@ -90,10 +130,10 @@ exports.userPresentInGroup=async(req,res,next)=>{
 
 // exports.getAllUsersOfGroup = async (req, res) => {
 //   try {
-//       const { groupid } = req.body;
+//       const { id } = req.body;
 
 //       // Find the group by ID
-//       const group = await groupModal.findByPk(groupid);
+//       const group = await groupModal.findByPk(id);
       
 //       console.log('group ===>>',group)
 //       if (!group) {
@@ -123,7 +163,7 @@ exports.getAllUsersOfGroup = async (req, res) => {
       include: {
         model: groupModal,
         attributes:[],// Exclude the group attributes
-        where: { groupid: groupid },
+        where: { id: groupid },
         through: { attributes: [] } // Exclude attributes from the join table
       }
     });
@@ -143,7 +183,7 @@ exports.GroupAdminId = async (req,res,next)=>{
   try{
     const {groupid} = req.body;
     const groupAdmin = await groupModal.findByPk(groupid) ;
-    //console.log(groupAdmin.groupid)
+    //console.log(groupAdmin.id)
     res.status(200).json(groupAdmin)
 
   }catch(error){
@@ -156,7 +196,7 @@ exports.GroupAdminId = async (req,res,next)=>{
 exports.deleteGroupMember= async(req,res,next)=>{
   try{
     const {groupid,userid} = req.body;
-    const deleteresponse = await userGroupModal.findOne({where : {userAuthDatumId : userid , groupDatumGroupid : groupid }}) ;
+    const deleteresponse = await userGroupModal.findOne({where : {userAuthDatumId : userid , groupDatumid : groupid }}) ;
     if(deleteresponse){
       await deleteresponse.destroy()
       res.status(200).json({message : 'deleted successfully'})

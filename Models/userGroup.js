@@ -1,5 +1,5 @@
 const { use } = require('../Routers/Group');
-const sequelize = require('../Util/database');
+const sequelize = require('../Util/Database');
 const Sequelize = require('sequelize')
 
 const userGroup =sequelize.define('userGroup', {
